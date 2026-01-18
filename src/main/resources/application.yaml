@@ -1,28 +1,44 @@
 server:
-  port: 8080
+  port: ${SERVER_PORT:8080}
 
 spring:
   application:
-    name: re-shopping-cart-web-app
+    name: ${SPRING_APPLICATION_NAME:re-shopping-cart-web-app}
 
   profiles:
-    active: prod # Production development
-    # active: local # Local development
+    #active: prod # Production development
+    active: local # Local development
 
   datasource:
-    url: ${DB_URL}
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
+    url: ${DB_URL:jdbc:mysql://localhost:3306/defaultdb}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:root}
     driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: ${DB_POOL_SIZE:10}
+      minimum-idle: ${DB_POOL_MIN_IDLE:5}
+      connection-timeout: ${DB_CONNECTION_TIMEOUT:30000}
 
   jpa:
     database-platform: org.hibernate.dialect.MySQLDialect
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: ${HIBERNATE_FORMAT_SQL:false}
     hibernate:
-      ddl-auto: none
-    show-sql: false
+      ddl-auto: ${HIBERNATE_DDL_AUTO:none}
+    show-sql: ${JPA_SHOW_SQL:false}
 
   thymeleaf:
-    cache: false
+    cache: ${THYMELEAF_CACHE:false}
+    prefix: classpath:/templates/
+    suffix: .html
+
+logging:
+  level:
+    root: ${LOG_LEVEL_ROOT:INFO}
+    com.rikkei.reshoppingcartwebapp: ${LOG_LEVEL_APP:INFO}
+    org.springframework: ${LOG_LEVEL_SPRING:WARN}
+    org.hibernate: ${LOG_LEVEL_HIBERNATE:WARN}
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
