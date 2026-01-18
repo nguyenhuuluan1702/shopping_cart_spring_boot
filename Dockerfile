@@ -1,32 +1,29 @@
-# Build stage
-FROM gradle:8.5-jdk21-alpine AS build
+#
+# Multi-stage build for Spring Boot (Gradle) app
+#
 
+FROM eclipse-temurin:21-jdk AS build
 WORKDIR /app
 
-# Copy Gradle files
-COPY build.gradle settings.gradle ./
-COPY gradle ./gradle
+# Copy only what we need for a reproducible Gradle build
+COPY gradlew gradlew.bat build.gradle settings.gradle /app/
+COPY gradle /app/gradle
 
-# Copy source code
-COPY src ./src
+# Copy sources
+COPY src /app/src
 
-# Build the application
-RUN gradle clean build -x test --no-daemon
+# Build a runnable jar (skip tests in CI image build unless you have DB-independent tests)
+RUN chmod +x /app/gradlew && /app/gradlew clean bootJar -x test
 
-# Runtime stage
-FROM eclipse-temurin:21-jre-alpine
-
+FROM eclipse-temurin:21-jre AS runtime
 WORKDIR /app
 
-# Create non-root user
-RUN addgroup -S spring && adduser -S spring -G spring
-USER spring:spring
+ENV TZ=UTC
+ENV JAVA_OPTS=""
 
-# Copy the built JAR from build stage
-COPY --from=build /app/build/libs/*.jar app.jar
+COPY --from=build /app/build/libs/*.jar /app/app.jar
 
-# Expose port
 EXPOSE 8080
 
-# Run the application
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# Use sh -c so JAVA_OPTS is expanded
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar /app/app.jar"]
